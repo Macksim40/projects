@@ -1,9 +1,10 @@
 import re
+from masks import get_mask_card_number, get_mask_account
 
 
-def mask_account_card(input_string):
+def mask_account_card(input_string: str) -> str:
     """
-    Маскирует номер карты или счёта в строке, оставляя видимыми только первые 6 и последние 4 цифры.
+    Маскирует номер карты или счёта в строке, используя соответствующий тип маскировки.
 
     Args:
         input_string (str): Строка, содержащая тип и номер карты/счёта, например:
@@ -11,36 +12,38 @@ def mask_account_card(input_string):
             - 'Maestro 7000792289606361'
             - 'Счёт 73654108430135874305'
 
+
     Returns:
         str: Исходная строка с замаскированным номером.
     """
-    # Регулярное выражение для поиска последовательности цифр в конце строки
-    pattern = r'(\d+)$'
-    match = re.search(pattern, input_string)
-
+    # Ищем последовательность цифр в конце строки
+    match = re.search(r'(\d+)$', input_string)
     if not match:
-        # Если цифр не найдено, возвращаем исходную строку без изменений
+        return input_string  # Если цифр нет, возвращаем исходную строку
+
+    full_number = match.group(1)
+
+    # Определяем тип: счёт или карта
+    is_account = 'Счёт' in input_string or 'счет' in input_string.lower()
+
+    try:
+        if is_account:
+            # Для счетов используем функцию маскировки счёта из модуля masks
+            masked_number = get_mask_account(full_number)
+        else:
+            # Для карт используем функцию маскировки карты из модуля masks
+            try:
+                masked_number = get_mask_card_number(full_number)
+            except ValueError:
+                # Если номер карты не 16 цифр, обрабатываем как счёт
+                masked_number = get_mask_account(full_number)
+    except ValueError as e:
+        # Если валидация не прошла ни для карты, ни для счёта, возвращаем исходную строку с предупреждением
+        print(f"Предупреждение: {e}. Возвращаем исходную строку.")
         return input_string
 
-    full_number = match.group(1)  # Получаем номер как строку
-    number_length = len(full_number)
-
-    # Определяем, какой шаблон маски использовать
-    if 'Счёт' in input_string or number_length > 16:
-        # Для счетов или номеров длиннее 16 цифр: показываем первые 4 и последние 4
-        if number_length <= 8:
-            # Если номер слишком короткий, маскируем всё, кроме крайних цифр
-            masked_number = full_number[0] + '*' * (number_length - 2) + full_number[-1]
-        else:
-            masked_part = '*' * (number_length - 8)
-            masked_number = full_number[:4] + masked_part + full_number[-4:]
-    else:
-        # Для карт (обычно 16 цифр): показываем первые 6 и последние 4
-        masked_part = '*' * (number_length - 10)
-        masked_number = full_number[:6] + masked_part + full_number[-4:]
-
-    # Заменяем оригинальный номер на замаскированный в исходной строке
-    result = input_string.replace(full_number, masked_number)
+    # Заменяем исходный номер на замаскированный в исходной строке
+    result = input_string[:-len(full_number)] + masked_number
     return result
 
 

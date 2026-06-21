@@ -1,76 +1,45 @@
 from datetime import datetime
+from typing import List, Dict, Any
 
-
-def filter_by_state(transactions: list, state: str = 'EXECUTED') -> list:
+def filter_by_state(transactions: List[Dict[str, Any]], state: str = 'EXECUTED') -> List[Dict[str, Any]]:
     """
-    Фильтрует список словарей по значению ключа 'state'.
+    Фильтрует транзакции по статусу.
 
     Args:
-        transactions (list): Список словарей, каждый из которых должен содержать ключ 'state'.
-        state (str): Значение ключа 'state' для фильтрации (по умолчанию 'EXECUTED').
-
+        transactions: список словарей с транзакциями.
+        state: значение ключа 'state' для фильтрации (по умолчанию 'EXECUTED').
 
     Returns:
-        list: Новый список словарей, где значение ключа 'state' совпадает с указанным.
+        Список транзакций с указанным статусом.
     """
     return [transaction for transaction in transactions if transaction.get('state') == state]
 
 
-def sort_by_date(transactions: list, reverse: bool = True) -> list:
+
+def sort_by_date(transactions: List[Dict[str, Any]], reverse: bool = True) -> List[Dict[str, Any]]:
     """
-    Сортирует список словарей по дате в ключе 'date'.
+    Сортирует транзакции по дате.
 
     Args:
-        transactions (list): Список словарей, каждый из которых должен содержать ключ 'date'
-            со значением в формате ISO (например, '2019-07-03T18:35:29.512364').
-        reverse (bool): Порядок сортировки: True — по убыванию (сначала новые),
-            False — по возрастанию (сначала старые) (по умолчанию True).
-
+        transactions: список словарей с транзакциями, содержащих ключ 'date'.
+        reverse: порядок сортировки (True — по убыванию, False — по возрастанию).
     Returns:
-        list: Новый отсортированный список словарей.
+        Отсортированный список транзакций.
+    Raises:
+        ValueError: если дата в транзакции имеет некорректный формат.
     """
-
-    def parse_date(date_string: str) -> datetime:
+    def parse_date(date_str: str) -> datetime:
         """Парсит строку даты в формате ISO в объект datetime."""
-        return datetime.fromisoformat(date_string)
+        if '.' in date_str:
+            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
+        else:
+            return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
 
-    # Сортируем список, используя ключ — преобразованную дату; сохраняем порядок по параметру reverse
-    sorted_transactions = sorted(
-        transactions,
-        key=lambda x: parse_date(x['date']),
-        reverse=reverse
-    )
-    return sorted_transactions
-
-
-# Примеры использования и проверки функций
-if __name__ == "__main__":
-    # Тестовые данные
-    test_data = [
-        {'id': 41428829, 'state': 'EXECUTED', 'date': '2019-07-03T18:35:29.512364'},
-        {'id': 939719570, 'state': 'EXECUTED', 'date': '2018-06-30T02:08:58.425572'},
-        {'id': 594226727, 'state': 'CANCELED', 'date': '2018-09-12T21:27:25.241689'},
-        {'id': 615064591, 'state': 'CANCELED', 'date': '2018-10-14T08:21:33.419441'}
-    ]
-
-    print("=== filter_by_state ===")
-    print("По умолчанию (state='EXECUTED'):")
-    result_executed = filter_by_state(test_data)
-    for item in result_executed:
-        print(item)
-
-    print("\nС параметром state='CANCELED':")
-    result_canceled = filter_by_state(test_data, 'CANCELED')
-    for item in result_canceled:
-        print(item)
-
-    print("\n=== sort_by_date ===")
-    print("Сортировка по убыванию (reverse=True):")
-    sorted_desc = sort_by_date(test_data, reverse=True)
-    for item in sorted_desc:
-        print(item)
-
-    print("\nСортировка по возрастанию (reverse=False):")
-    sorted_asc = sort_by_date(test_data, reverse=False)
-    for item in sorted_asc:
-        print(item)
+    try:
+        return sorted(
+            transactions,
+            key=lambda x: parse_date(x['date']),
+            reverse=reverse
+        )
+    except (KeyError, ValueError) as e:
+        raise ValueError(f"Ошибка при парсинге даты: {e}")

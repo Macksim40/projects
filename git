@@ -1,0 +1,79 @@
+[1mdiff --git a/src/widget.py b/src/widget.py[m
+[1mindex bcb774b..2504258 100644[m
+[1m--- a/src/widget.py[m
+[1m+++ b/src/widget.py[m
+[36m@@ -1,9 +1,10 @@[m
+ import re[m
+[32m+[m[32mfrom masks import get_mask_card_number, get_mask_account[m
+ [m
+ [m
+[31m-def mask_account_card(input_string):[m
+[32m+[m[32mdef mask_account_card(input_string: str) -> str:[m
+     """[m
+[31m-    Маскирует номер карты или счёта в строке, оставляя видимыми только первые 6 и последние 4 цифры.[m
+[32m+[m[32m    Маскирует номер карты или счёта в строке, используя соответствующий тип маскировки.[m
+ [m
+     Args:[m
+         input_string (str): Строка, содержащая тип и номер карты/счёта, например:[m
+[36m@@ -11,36 +12,38 @@[m [mdef mask_account_card(input_string):[m
+             - 'Maestro 7000792289606361'[m
+             - 'Счёт 73654108430135874305'[m
+ [m
+[32m+[m
+     Returns:[m
+         str: Исходная строка с замаскированным номером.[m
+     """[m
+[31m-    # Регулярное выражение для поиска последовательности цифр в конце строки[m
+[31m-    pattern = r'(\d+)$'[m
+[31m-    match = re.search(pattern, input_string)[m
+[31m-[m
+[32m+[m[32m    # Ищем последовательность цифр в конце строки[m
+[32m+[m[32m    match = re.search(r'(\d+)$', input_string)[m
+     if not match:[m
+[31m-        # Если цифр не найдено, возвращаем исходную строку без изменений[m
+[31m-        return input_string[m
+[32m+[m[32m        return input_string  # Если цифр нет, возвращаем исходную строку[m
+[32m+[m
+[32m+[m[32m    full_number = match.group(1)[m
+ [m
+[31m-    full_number = match.group(1)  # Получаем номер как строку[m
+[31m-    number_length = len(full_number)[m
+[32m+[m[32m    # Определяем тип: счёт или карта[m
+[32m+[m[32m    is_account = 'Счёт' in input_string or 'счет' in input_string.lower()[m
+ [m
+[31m-    # Определяем, какой шаблон маски использовать[m
+[31m-    if 'Счёт' in input_string or number_length > 16:[m
+[31m-        # Для счетов или номеров длиннее 16 цифр: показываем первые 4 и последние 4[m
+[31m-        if number_length <= 8:[m
+[31m-            # Если номер слишком короткий, маскируем всё, кроме крайних цифр[m
+[31m-            masked_number = full_number[0] + '*' * (number_length - 2) + full_number[-1][m
+[32m+[m[32m    try:[m
+[32m+[m[32m        if is_account:[m
+[32m+[m[32m            # Для счетов используем функцию маскировки счёта из модуля masks[m
+[32m+[m[32m            masked_number = get_mask_account(full_number)[m
+         else:[m
+[31m-            masked_part = '*' * (number_length - 8)[m
+[31m-            masked_number = full_number[:4] + masked_part + full_number[-4:][m
+[31m-    else:[m
+[31m-        # Для карт (обычно 16 цифр): показываем первые 6 и последние 4[m
+[31m-        masked_part = '*' * (number_length - 10)[m
+[31m-        masked_number = full_number[:6] + masked_part + full_number[-4:][m
+[31m-[m
+[31m-    # Заменяем оригинальный номер на замаскированный в исходной строке[m
+[31m-    result = input_string.replace(full_number, masked_number)[m
+[32m+[m[32m            # Для карт используем функцию маскировки карты из модуля masks[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                masked_number = get_mask_card_number(full_number)[m
+[32m+[m[32m            except ValueError:[m
+[32m+[m[32m                # Если номер карты не 16 цифр, обрабатываем как счёт[m
+[32m+[m[32m                masked_number = get_mask_account(full_number)[m
+[32m+[m[32m    except ValueError as e:[m
+[32m+[m[32m        # Если валидация не прошла ни для карты, ни для счёта, возвращаем исходную строку с предупреждением[m
+[32m+[m[32m        print(f"Предупреждение: {e}. Возвращаем исходную строку.")[m
+[32m+[m[32m        return input_string[m
+[32m+[m
+[32m+[m[32m    # Заменяем исходный номер на замаскированный в исходной строке[m
+[32m+[m[32m    result = input_string[:-len(full_number)] + masked_number[m
+     return result[m
+ [m
+ [m

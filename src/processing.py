@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import List, Dict, Any, Optional
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 Transaction = Dict[str, Any]
 
